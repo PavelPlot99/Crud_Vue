@@ -1,0 +1,93 @@
+<template>
+    <div>
+        <div v-if="message" class="alert">{{ message }}</div>
+        <div v-if="! loaded">Loading...</div>
+        <form @submit.prevent="onSubmit($event)" v-else>
+            <div class="form-group">
+                <label for="user_name">Name</label>
+                <input id="user_name" v-model="user.name" />
+            </div>
+            <div class="form-group">
+                <label for="user_email">Email</label>
+                <input id="user_email" type="email" v-model="user.email"/>
+            </div>
+            <div class="form-group">
+                <button type="submit" :disabled="saving">Update</button>
+                <button :disabled="saving" @click.prevent="onDelete($event)">Delete</button>
+            </div>
+        </form>
+    </div>
+</template>
+
+<script>
+import api from '../api/users';
+import axios from 'axios';
+export default{
+    data() {
+        return{
+            loaded:false,
+            message: null,
+            saving:false,
+            user:{
+                id: null,
+                name: "",
+                email: ""
+            }
+        };
+    },
+    methods:{
+        onSubmit(event){
+            this.saving = true;
+            let id = this.user.id;
+            api.update(id, {
+                name: this.user.name,
+                email: this.user.email,
+            }).then((response) => {
+                this.message = 'User updated';
+                setTimeout(() => this.message = null, 2000);
+                this.user = response.data.data;
+                console.log(response);
+            }).catch(error => {
+                console.log(error)
+            }).then(_ => this.saving = false);
+        },
+        onDelete(event){
+            this.saving = true;
+            let id = this.user.id;
+            api.delete(id)
+                .then((response) => {
+                    console.log(response);
+                    this.message = 'User Deleted';
+                    setTimeout(() => this.$router.push({ name: 'users.index' }), 2000);
+                });
+        },
+
+
+    },
+    created: function(){
+        let id = this.$route.params.id;
+        console.log(id);
+        api.find(id).then((response) => {
+            this.loaded = true;
+
+            this.user = response.data.data;
+        });
+    },
+};
+</script>
+<style lang="scss" scoped>
+$red: lighten(red, 30%);
+$darkRed: darken($red, 50%);
+.form-group label {
+    display: block;
+}
+.alert {
+    background: $red;
+    color: $darkRed;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    width: 50%;
+    border: 1px solid $darkRed;
+    border-radius: 5px;
+}
+</style>
